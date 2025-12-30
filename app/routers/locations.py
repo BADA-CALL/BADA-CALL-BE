@@ -35,26 +35,15 @@ async def update_location(
         )
 
     try:
-        # 기기 ID로 사용자 확인 (선택적)
-        try:
-            user_response = supabase.table("users").select("id").eq("device_id", location_data.device_id).execute()
-            user_id = user_response.data[0]["id"] if user_response.data else None
-            print(f"User lookup for device_id {location_data.device_id}: {user_response.data}")
-            print(f"Resolved user_id: {user_id}")
-        except Exception as e:
-            print(f"Warning: Could not find user for device_id {location_data.device_id}: {e}")
-            user_id = None
-
-        # timestamp 처리 - 간단하게 클라이언트 timestamp 그대로 사용하거나 서버 시간 사용
+        # 간단한 timestamp 처리
+        timestamp = datetime.utcnow().isoformat()
         if location_data.timestamp:
             if isinstance(location_data.timestamp, str):
                 timestamp = location_data.timestamp
             else:
                 timestamp = location_data.timestamp.isoformat()
-        else:
-            timestamp = datetime.utcnow().isoformat()
 
-        # 위치 데이터 준비
+        # 위치 데이터 준비 - user_id 없이 간단하게
         location_insert_data = {
             "device_id": location_data.device_id,
             "latitude": location_data.latitude,
@@ -66,14 +55,8 @@ async def update_location(
             "timestamp": timestamp
         }
 
-        # user_id가 있는 경우에만 추가
-        if user_id:
-            location_insert_data["user_id"] = user_id
-
         # 데이터베이스에 위치 저장
-        print(f"Inserting location data: {location_insert_data}")
         response = supabase.table("locations").insert(location_insert_data).execute()
-        print(f"Supabase response: {response}")
 
         if response.data:
             location = response.data[0]
@@ -89,27 +72,15 @@ async def update_location(
                 timestamp=location["timestamp"]
             )
         else:
-            print(f"No data in response: {response}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="위치 저장에 실패했습니다"
             )
 
     except Exception as e:
-        error_message = str(e)
-        print(f"Error updating location: {e}")
-        print(f"Location data: {location_data}")
-        print(f"Error type: {type(e)}")
-
-        # Supabase 에러인 경우 더 자세한 정보 추출
-        if hasattr(e, 'details'):
-            error_message += f" | Details: {e.details}"
-        if hasattr(e, 'message'):
-            error_message += f" | Message: {e.message}"
-
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"위치 업데이트 중 오류가 발생했습니다: {error_message}"
+            detail=f"위치 업데이트 중 오류가 발생했습니다: {str(e)}"
         )
 
 @router.get("/current", response_model=LocationResponse, summary="현재 위치 조회")
