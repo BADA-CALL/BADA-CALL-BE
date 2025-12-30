@@ -39,6 +39,19 @@ async def update_location(
         user_response = supabase.table("users").select("id").eq("device_id", location_data.device_id).execute()
         user_id = user_response.data[0]["id"] if user_response.data else None
 
+        # timestamp 처리
+        if location_data.timestamp:
+            if isinstance(location_data.timestamp, str):
+                try:
+                    # ISO 8601 형식 파싱
+                    timestamp = datetime.fromisoformat(location_data.timestamp.replace('Z', '+00:00')).isoformat()
+                except Exception:
+                    timestamp = datetime.utcnow().isoformat()
+            else:
+                timestamp = location_data.timestamp.isoformat()
+        else:
+            timestamp = datetime.utcnow().isoformat()
+
         # 위치 데이터 준비
         location_insert_data = {
             "device_id": location_data.device_id,
@@ -49,7 +62,7 @@ async def update_location(
             "altitude": location_data.altitude,
             "speed": location_data.speed,
             "heading": location_data.heading,
-            "timestamp": location_data.timestamp.isoformat() if location_data.timestamp else datetime.utcnow().isoformat()
+            "timestamp": timestamp
         }
 
         # 데이터베이스에 위치 저장

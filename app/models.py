@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Union
 from datetime import datetime
 from enum import Enum
 
@@ -117,7 +117,7 @@ class LocationUpdate(BaseModel):
     altitude: Optional[float] = None
     speed: Optional[float] = None
     heading: Optional[float] = None
-    timestamp: Optional[datetime] = None
+    timestamp: Optional[Union[datetime, str]] = None
 
 class LocationResponse(BaseModel):
     id: str
