@@ -39,3 +39,7 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+# Project documentation (exclude from git)
+CLAUDE.md
+PRD.md

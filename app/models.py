@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional, Dict, List
 from datetime import datetime
 from enum import Enum
@@ -30,6 +30,26 @@ class SensorData(BaseModel):
     heading: Optional[float] = None
     timestamp: datetime
 
+# Auth Models
+class UserRegister(BaseModel):
+    name: str
+    phone: str
+    password: str
+    boat_name: Optional[str] = None
+    boat_number: Optional[str] = None
+
+class UserLogin(BaseModel):
+    phone: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user_id: str
+
+class TokenData(BaseModel):
+    user_id: Optional[str] = None
+
 class EmergencyContact(BaseModel):
     name: str
     phone: str
@@ -38,15 +58,20 @@ class EmergencyContact(BaseModel):
 class UserBase(BaseModel):
     name: str
     phone: str
-    boat_info: Optional[str] = None
+    boat_name: Optional[str] = None
+    boat_number: Optional[str] = None
 
 class UserCreate(UserBase):
+    password: str
     emergency_contacts: Optional[List[EmergencyContact]] = []
 
 class User(UserBase):
     id: str
     emergency_contacts: List[EmergencyContact] = []
     created_at: datetime
+
+class UserInDB(User):
+    password_hash: str
 
 class ReportBase(BaseModel):
     type: ReportType
