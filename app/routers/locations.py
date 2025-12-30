@@ -212,6 +212,40 @@ async def get_location_history(
             detail="위치 이력 조회 중 오류가 발생했습니다"
         )
 
+@router.post("/test", summary="위치 테스트")
+async def test_location_update(
+    device_id: str,
+    latitude: float,
+    longitude: float
+):
+    """
+    간단한 위치 테스트 API
+    """
+    if supabase is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="데이터베이스 연결이 필요합니다."
+        )
+
+    try:
+        # 최소한의 데이터로 테스트
+        test_data = {
+            "device_id": device_id,
+            "latitude": latitude,
+            "longitude": longitude,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+        response = supabase.table("locations").insert(test_data).execute()
+
+        if response.data:
+            return {"success": True, "data": response.data[0]}
+        else:
+            return {"success": False, "error": "No data returned"}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 @router.get("/stats", summary="위치 통계")
 async def get_location_stats(
     device_id: str
