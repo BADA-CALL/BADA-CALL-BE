@@ -36,20 +36,17 @@ async def create_emergency_report(
         )
 
     try:
-        # 기기 ID로 사용자 확인
-        user_response = supabase.table("users").select("id").eq("device_id", report_data.device_id).execute()
-        if not user_response.data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="등록되지 않은 기기입니다. 먼저 온보딩을 완료해주세요."
-            )
+        # 기기 ID로 사용자 확인 (선택적)
+        try:
+            user_response = supabase.table("users").select("id").eq("device_id", report_data.device_id).execute()
+            user_id = user_response.data[0]["id"] if user_response.data else None
+        except Exception as e:
+            print(f"Warning: Could not find user for device_id {report_data.device_id}: {e}")
+            user_id = None
 
-        user_id = user_response.data[0]["id"]
-
-        # 신고 데이터 준비
+        # 신고 데이터 준비 - user_id 없이도 가능하도록
         report_insert_data = {
             "device_id": report_data.device_id,
-            "user_id": user_id,
             "type": report_data.type,
             "emergency_type": report_data.emergency_type,
             "status": ReportStatus.PENDING,
@@ -61,6 +58,10 @@ async def create_emergency_report(
             "reported_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
         }
+
+        # user_id는 외래키 문제로 인해 제외 (users_backup 테이블 참조 문제)
+        # if user_id:
+        #     report_insert_data["user_id"] = user_id
 
         # 데이터베이스에 신고 생성
         response = supabase.table("reports").insert(report_insert_data).execute()
