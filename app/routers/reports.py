@@ -285,9 +285,9 @@ async def cancel_report(
 
 @router.get("/history", response_model=List[ReportResponse], summary="신고 이력 조회")
 async def get_report_history(
+    device_id: str,
     limit: int = 10,
-    offset: int = 0,
-    device_id: str
+    offset: int = 0
 ):
     """
     사용자의 신고 이력을 조회합니다.

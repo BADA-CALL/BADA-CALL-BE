@@ -128,9 +128,9 @@ async def get_current_location(
 
 @router.get("/history", response_model=List[LocationResponse], summary="위치 이력 조회")
 async def get_location_history(
+    device_id: str,
     limit: int = Query(default=20, ge=1, le=100, description="조회할 개수 (1-100)"),
-    offset: int = Query(default=0, ge=0, description="건너뛸 개수"),
-    device_id: str
+    offset: int = Query(default=0, ge=0, description="건너뛸 개수")
 ):
     """
     사용자의 위치 이력을 조회합니다.
