@@ -117,6 +117,7 @@ class LocationUpdate(BaseModel):
     altitude: Optional[float] = None
     speed: Optional[float] = None
     heading: Optional[float] = None
+    timestamp: Optional[datetime] = None
 
 class LocationResponse(BaseModel):
     id: str

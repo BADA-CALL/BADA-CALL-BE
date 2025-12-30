@@ -49,7 +49,7 @@ async def update_location(
             "altitude": location_data.altitude,
             "speed": location_data.speed,
             "heading": location_data.heading,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": location_data.timestamp.isoformat() if location_data.timestamp else datetime.utcnow().isoformat()
         }
 
         # 데이터베이스에 위치 저장
