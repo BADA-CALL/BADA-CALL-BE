@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import auth, reports
+from app.routers import auth, reports, locations
 
 app = FastAPI(
     title="바다콜 Backend",
@@ -20,6 +20,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router)
 app.include_router(reports.router)
+app.include_router(locations.router)
 
 @app.get("/")
 async def root():
