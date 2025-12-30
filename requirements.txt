@@ -9,3 +9,4 @@ pydantic-settings
 passlib
 bcrypt
 email-validator
+httpx
