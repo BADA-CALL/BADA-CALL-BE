@@ -39,6 +39,8 @@ async def update_location(
         try:
             user_response = supabase.table("users").select("id").eq("device_id", location_data.device_id).execute()
             user_id = user_response.data[0]["id"] if user_response.data else None
+            print(f"User lookup for device_id {location_data.device_id}: {user_response.data}")
+            print(f"Resolved user_id: {user_id}")
         except Exception as e:
             print(f"Warning: Could not find user for device_id {location_data.device_id}: {e}")
             user_id = None
