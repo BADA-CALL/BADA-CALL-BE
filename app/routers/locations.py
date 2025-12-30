@@ -39,14 +39,10 @@ async def update_location(
         user_response = supabase.table("users").select("id").eq("device_id", location_data.device_id).execute()
         user_id = user_response.data[0]["id"] if user_response.data else None
 
-        # timestamp 처리
+        # timestamp 처리 - 간단하게 클라이언트 timestamp 그대로 사용하거나 서버 시간 사용
         if location_data.timestamp:
             if isinstance(location_data.timestamp, str):
-                try:
-                    # ISO 8601 형식 파싱
-                    timestamp = datetime.fromisoformat(location_data.timestamp.replace('Z', '+00:00')).isoformat()
-                except Exception:
-                    timestamp = datetime.utcnow().isoformat()
+                timestamp = location_data.timestamp
             else:
                 timestamp = location_data.timestamp.isoformat()
         else:
@@ -89,9 +85,11 @@ async def update_location(
 
     except Exception as e:
         print(f"Error updating location: {e}")
+        print(f"Location data: {location_data}")
+        print(f"Supabase response: {response if 'response' in locals() else 'No response'}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="위치 업데이트 중 오류가 발생했습니다"
+            detail=f"위치 업데이트 중 오류가 발생했습니다: {str(e)}"
         )
 
 @router.get("/current", response_model=LocationResponse, summary="현재 위치 조회")
