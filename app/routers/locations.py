@@ -5,19 +5,22 @@ from app.models import (
     LocationUpdate,
     LocationResponse
 )
-from app.auth import get_current_user
+# from app.auth import get_current_user  # 더 이상 필요 없음
+import uuid
 from app.database import supabase
 
 router = APIRouter(prefix="/location", tags=["위치 관리"])
 
 @router.post("/update", response_model=LocationResponse, summary="GPS 위치 업데이트")
 async def update_location(
-    location_data: LocationUpdate,
-    current_user: dict = Depends(get_current_user)
+    location_data: LocationUpdate
 ):
     """
     사용자의 GPS 위치를 업데이트합니다.
 
+    **인증이 필요하지 않은 엔드포인트입니다.**
+
+    - **device_id**: 기기 고유 ID
     - **latitude**: 위도
     - **longitude**: 경도
     - **accuracy**: GPS 정확도 (미터, 선택사항)
@@ -34,7 +37,7 @@ async def update_location(
     try:
         # 위치 데이터 준비
         location_insert_data = {
-            "user_id": current_user["id"],
+            "user_id": user_id,
             "latitude": location_data.latitude,
             "longitude": location_data.longitude,
             "accuracy": location_data.accuracy,
@@ -75,7 +78,7 @@ async def update_location(
 
 @router.get("/current", response_model=LocationResponse, summary="현재 위치 조회")
 async def get_current_location(
-    current_user: dict = Depends(get_current_user)
+    device_id: str
 ):
     """
     사용자의 최신 위치를 조회합니다.
@@ -90,7 +93,7 @@ async def get_current_location(
         # 최신 위치 조회 (시간순 정렬)
         response = supabase.table("locations")\
             .select("*")\
-            .eq("user_id", current_user["id"])\
+            .eq("user_id", user_id)\
             .order("timestamp", desc=True)\
             .limit(1)\
             .execute()
@@ -127,7 +130,7 @@ async def get_current_location(
 async def get_location_history(
     limit: int = Query(default=20, ge=1, le=100, description="조회할 개수 (1-100)"),
     offset: int = Query(default=0, ge=0, description="건너뛸 개수"),
-    current_user: dict = Depends(get_current_user)
+    device_id: str
 ):
     """
     사용자의 위치 이력을 조회합니다.
@@ -145,7 +148,7 @@ async def get_location_history(
         # 위치 이력 조회 (최신순)
         response = supabase.table("locations")\
             .select("*")\
-            .eq("user_id", current_user["id"])\
+            .eq("user_id", user_id)\
             .order("timestamp", desc=True)\
             .range(offset, offset + limit - 1)\
             .execute()
@@ -175,7 +178,7 @@ async def get_location_history(
 
 @router.get("/stats", summary="위치 통계")
 async def get_location_stats(
-    current_user: dict = Depends(get_current_user)
+    device_id: str
 ):
     """
     사용자의 위치 통계 정보를 조회합니다.
@@ -194,7 +197,7 @@ async def get_location_stats(
         # 통계 조회
         response = supabase.table("locations")\
             .select("id, timestamp")\
-            .eq("user_id", current_user["id"])\
+            .eq("user_id", user_id)\
             .order("timestamp", desc=False)\
             .execute()
 

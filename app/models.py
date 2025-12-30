@@ -36,51 +36,39 @@ class SensorData(BaseModel):
     heading: Optional[float] = None
     timestamp: datetime
 
-# Auth Models
-class UserRegister(BaseModel):
+# Onboarding Models
+class OnboardingData(BaseModel):
+    device_id: str
     name: str
     phone: str
-    password: str
     boat_name: Optional[str] = None
     boat_number: Optional[str] = None
+    emergency_contact_1_name: Optional[str] = None
+    emergency_contact_1_phone: Optional[str] = None
+    emergency_contact_2_name: Optional[str] = None
+    emergency_contact_2_phone: Optional[str] = None
 
-class UserLogin(BaseModel):
-    phone: str
-    password: str
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class OnboardingResponse(BaseModel):
+    device_id: str
+    message: str
     user_id: str
-
-class TokenData(BaseModel):
-    user_id: Optional[str] = None
 
 class EmergencyContact(BaseModel):
     name: str
     phone: str
-    relationship: str
 
-class UserBase(BaseModel):
+class UserProfile(BaseModel):
+    device_id: str
     name: str
     phone: str
     boat_name: Optional[str] = None
     boat_number: Optional[str] = None
-
-class UserCreate(UserBase):
-    password: str
-    emergency_contacts: Optional[List[EmergencyContact]] = []
-
-class User(UserBase):
-    id: str
     emergency_contacts: List[EmergencyContact] = []
     created_at: datetime
 
-class UserInDB(User):
-    password_hash: str
-
 # Report Models
 class EmergencyReportCreate(BaseModel):
+    device_id: str
     type: ReportType = ReportType.MANUAL
     emergency_type: EmergencyType = EmergencyType.OTHER
     location_latitude: float
@@ -90,6 +78,7 @@ class EmergencyReportCreate(BaseModel):
     sensor_data: Optional[Dict] = None
 
 class AutoDetectionReport(BaseModel):
+    device_id: str
     type: ReportType = ReportType.AUTO_DETECTION
     location_latitude: float
     location_longitude: float
@@ -105,7 +94,7 @@ class ReportUpdate(BaseModel):
 
 class ReportResponse(BaseModel):
     id: str
-    user_id: str
+    device_id: str
     type: ReportType
     status: ReportStatus
     location_latitude: float
@@ -121,6 +110,7 @@ class ReportResponse(BaseModel):
 
 # Location Models
 class LocationUpdate(BaseModel):
+    device_id: str
     latitude: float
     longitude: float
     accuracy: Optional[float] = None
@@ -130,7 +120,7 @@ class LocationUpdate(BaseModel):
 
 class LocationResponse(BaseModel):
     id: str
-    user_id: str
+    device_id: str
     latitude: float
     longitude: float
     accuracy: Optional[float]

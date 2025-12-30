@@ -8,7 +8,7 @@ from app.models import (
     ReportResponse,
     ReportStatus
 )
-from app.auth import get_current_user
+# from app.auth import get_current_user  # 더 이상 필요 없음
 from app.database import supabase
 
 router = APIRouter(prefix="/reports", tags=["신고 관리"])
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/reports", tags=["신고 관리"])
 @router.post("/emergency", response_model=ReportResponse, summary="긴급 신고")
 async def create_emergency_report(
     report_data: EmergencyReportCreate,
-    current_user: dict = Depends(get_current_user)
+    device_id: str
 ):
     """
     긴급 신고를 접수합니다.
@@ -57,7 +57,7 @@ async def create_emergency_report(
             report = response.data[0]
             return ReportResponse(
                 id=str(report["id"]),
-                user_id=str(report["user_id"]),
+                device_id=str(report["device_id"]),
                 type=report["type"],
                 status=report["status"],
                 location_latitude=report["location_latitude"],
@@ -86,12 +86,14 @@ async def create_emergency_report(
 
 @router.post("/auto-detection", response_model=ReportResponse, summary="자동 사고 감지 신고")
 async def create_auto_detection_report(
-    report_data: AutoDetectionReport,
-    current_user: dict = Depends(get_current_user)
+    report_data: AutoDetectionReport
 ):
     """
     자동 사고 감지 신고를 접수합니다.
 
+    **인증이 필요하지 않은 엔드포인트입니다.**
+
+    - **device_id**: 기기 고유 ID
     - **location_latitude**: 위도
     - **location_longitude**: 경도
     - **sensor_data**: 센서 데이터 (가속도, 충격 등)
@@ -104,9 +106,22 @@ async def create_auto_detection_report(
         )
 
     try:
+        # 기기 ID로 사용자 확인
+        user_response = supabase.table("users").select("id").eq("device_id", report_data.device_id).execute()
+        if not user_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="등록되지 않은 기기입니다. 먼저 온보딩을 완료해주세요."
+            )
+
+        user_id = user_response.data[0]["id"]
+
         # 자동 감지 신고 데이터 준비
+        report_id = str(uuid.uuid4())
         report_insert_data = {
-            "user_id": current_user["id"],
+            "id": report_id,
+            "device_id": report_data.device_id,
+            "user_id": user_id,
             "type": report_data.type,
             "status": ReportStatus.PENDING,
             "location_latitude": report_data.location_latitude,
@@ -124,7 +139,7 @@ async def create_auto_detection_report(
             report = response.data[0]
             return ReportResponse(
                 id=str(report["id"]),
-                user_id=str(report["user_id"]),
+                device_id=str(report["device_id"]),
                 type=report["type"],
                 status=report["status"],
                 location_latitude=report["location_latitude"],
@@ -149,7 +164,7 @@ async def create_auto_detection_report(
 @router.get("/status/{report_id}", response_model=ReportResponse, summary="신고 상태 조회")
 async def get_report_status(
     report_id: str,
-    current_user: dict = Depends(get_current_user)
+    device_id: str
 ):
     """
     특정 신고의 상태를 조회합니다.
@@ -175,7 +190,7 @@ async def get_report_status(
         report = response.data[0]
         return ReportResponse(
             id=str(report["id"]),
-            user_id=str(report["user_id"]),
+            device_id=str(report["device_id"]),
             type=report["type"],
             status=report["status"],
             location_latitude=report["location_latitude"],
@@ -202,7 +217,7 @@ async def get_report_status(
 @router.put("/{report_id}/cancel", response_model=ReportResponse, summary="신고 취소")
 async def cancel_report(
     report_id: str,
-    current_user: dict = Depends(get_current_user)
+    device_id: str
 ):
     """
     신고를 취소합니다. (PENDING 상태에서만 가능)
@@ -272,7 +287,7 @@ async def cancel_report(
 async def get_report_history(
     limit: int = 10,
     offset: int = 0,
-    current_user: dict = Depends(get_current_user)
+    device_id: str
 ):
     """
     사용자의 신고 이력을 조회합니다.
@@ -299,7 +314,7 @@ async def get_report_history(
         for report in response.data:
             reports.append(ReportResponse(
                 id=str(report["id"]),
-                user_id=str(report["user_id"]),
+                device_id=str(report["device_id"]),
                 type=report["type"],
                 status=report["status"],
                 location_latitude=report["location_latitude"],

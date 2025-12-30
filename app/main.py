@@ -4,7 +4,7 @@ import asyncio
 import httpx
 from datetime import datetime
 from app.config import settings
-from app.routers import auth, reports, locations
+from app.routers import onboarding, reports, locations
 
 app = FastAPI(
     title="바다콜 Backend",
@@ -21,7 +21,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth.router)
+app.include_router(onboarding.router)
 app.include_router(reports.router)
 app.include_router(locations.router)
 
@@ -50,7 +50,7 @@ async def auto_ping():
         try:
             # 자신에게 ping 요청 (Render 환경에서는 외부 URL 사용)
             async with httpx.AsyncClient() as client:
-                await client.get("https://badaback-api.onrender.com/keep-alive", timeout=30)
+                await client.get("https://bada-call-be.onrender.com/keep-alive", timeout=30)
         except Exception as e:
             print(f"Auto ping failed: {e}")
 

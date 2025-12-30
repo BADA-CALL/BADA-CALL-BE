@@ -43,3 +43,5 @@ Thumbs.db
 # Project documentation (exclude from git)
 CLAUDE.md
 PRD.md
+GUIDE.md
+API.md
