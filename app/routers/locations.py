@@ -57,7 +57,6 @@ async def update_location(
         # 위치 데이터 준비
         location_insert_data = {
             "device_id": location_data.device_id,
-            "user_id": user_id,
             "latitude": location_data.latitude,
             "longitude": location_data.longitude,
             "accuracy": location_data.accuracy,
@@ -66,6 +65,10 @@ async def update_location(
             "heading": location_data.heading,
             "timestamp": timestamp
         }
+
+        # user_id가 있는 경우에만 추가
+        if user_id:
+            location_insert_data["user_id"] = user_id
 
         # 데이터베이스에 위치 저장
         print(f"Inserting location data: {location_insert_data}")
