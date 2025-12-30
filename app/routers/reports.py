@@ -51,6 +51,7 @@ async def create_emergency_report(
             "device_id": report_data.device_id,
             "user_id": user_id,
             "type": report_data.type,
+            "emergency_type": report_data.emergency_type,
             "status": ReportStatus.PENDING,
             "location_latitude": report_data.location_latitude,
             "location_longitude": report_data.location_longitude,
@@ -92,7 +93,7 @@ async def create_emergency_report(
         print(f"Error creating emergency report: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="신고 처리 중 오류가 발생했습니다"
+            detail=f"신고 처리 중 오류가 발생했습니다: {str(e)}"
         )
 
 @router.post("/auto-detection", response_model=ReportResponse, summary="자동 사고 감지 신고")
