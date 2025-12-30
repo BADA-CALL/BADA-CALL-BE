@@ -36,8 +36,12 @@ async def update_location(
 
     try:
         # 기기 ID로 사용자 확인 (선택적)
-        user_response = supabase.table("users").select("id").eq("device_id", location_data.device_id).execute()
-        user_id = user_response.data[0]["id"] if user_response.data else None
+        try:
+            user_response = supabase.table("users").select("id").eq("device_id", location_data.device_id).execute()
+            user_id = user_response.data[0]["id"] if user_response.data else None
+        except Exception as e:
+            print(f"Warning: Could not find user for device_id {location_data.device_id}: {e}")
+            user_id = None
 
         # timestamp 처리 - 간단하게 클라이언트 timestamp 그대로 사용하거나 서버 시간 사용
         if location_data.timestamp:
@@ -62,7 +66,9 @@ async def update_location(
         }
 
         # 데이터베이스에 위치 저장
+        print(f"Inserting location data: {location_insert_data}")
         response = supabase.table("locations").insert(location_insert_data).execute()
+        print(f"Supabase response: {response}")
 
         if response.data:
             location = response.data[0]
@@ -78,6 +84,7 @@ async def update_location(
                 timestamp=location["timestamp"]
             )
         else:
+            print(f"No data in response: {response}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="위치 저장에 실패했습니다"
