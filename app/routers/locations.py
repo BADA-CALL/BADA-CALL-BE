@@ -91,12 +91,20 @@ async def update_location(
             )
 
     except Exception as e:
+        error_message = str(e)
         print(f"Error updating location: {e}")
         print(f"Location data: {location_data}")
-        print(f"Supabase response: {response if 'response' in locals() else 'No response'}")
+        print(f"Error type: {type(e)}")
+
+        # Supabase 에러인 경우 더 자세한 정보 추출
+        if hasattr(e, 'details'):
+            error_message += f" | Details: {e.details}"
+        if hasattr(e, 'message'):
+            error_message += f" | Message: {e.message}"
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"위치 업데이트 중 오류가 발생했습니다: {str(e)}"
+            detail=f"위치 업데이트 중 오류가 발생했습니다: {error_message}"
         )
 
 @router.get("/current", response_model=LocationResponse, summary="현재 위치 조회")
