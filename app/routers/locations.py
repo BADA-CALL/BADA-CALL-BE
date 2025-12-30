@@ -35,8 +35,13 @@ async def update_location(
         )
 
     try:
+        # 기기 ID로 사용자 확인 (선택적)
+        user_response = supabase.table("users").select("id").eq("device_id", location_data.device_id).execute()
+        user_id = user_response.data[0]["id"] if user_response.data else None
+
         # 위치 데이터 준비
         location_insert_data = {
+            "device_id": location_data.device_id,
             "user_id": user_id,
             "latitude": location_data.latitude,
             "longitude": location_data.longitude,
@@ -54,7 +59,7 @@ async def update_location(
             location = response.data[0]
             return LocationResponse(
                 id=str(location["id"]),
-                user_id=str(location["user_id"]),
+                device_id=str(location["device_id"]),
                 latitude=location["latitude"],
                 longitude=location["longitude"],
                 accuracy=location.get("accuracy"),
@@ -93,7 +98,7 @@ async def get_current_location(
         # 최신 위치 조회 (시간순 정렬)
         response = supabase.table("locations")\
             .select("*")\
-            .eq("user_id", user_id)\
+            .eq("device_id", device_id)\
             .order("timestamp", desc=True)\
             .limit(1)\
             .execute()
@@ -107,7 +112,7 @@ async def get_current_location(
         location = response.data[0]
         return LocationResponse(
             id=str(location["id"]),
-            user_id=str(location["user_id"]),
+            device_id=str(location["device_id"]),
             latitude=location["latitude"],
             longitude=location["longitude"],
             accuracy=location.get("accuracy"),
@@ -148,7 +153,7 @@ async def get_location_history(
         # 위치 이력 조회 (최신순)
         response = supabase.table("locations")\
             .select("*")\
-            .eq("user_id", user_id)\
+            .eq("device_id", device_id)\
             .order("timestamp", desc=True)\
             .range(offset, offset + limit - 1)\
             .execute()
@@ -157,7 +162,7 @@ async def get_location_history(
         for location in response.data:
             locations.append(LocationResponse(
                 id=str(location["id"]),
-                user_id=str(location["user_id"]),
+                device_id=str(location["device_id"]),
                 latitude=location["latitude"],
                 longitude=location["longitude"],
                 accuracy=location.get("accuracy"),
@@ -197,7 +202,7 @@ async def get_location_stats(
         # 통계 조회
         response = supabase.table("locations")\
             .select("id, timestamp")\
-            .eq("user_id", user_id)\
+            .eq("device_id", device_id)\
             .order("timestamp", desc=False)\
             .execute()
 

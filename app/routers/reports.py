@@ -8,6 +8,7 @@ from app.models import (
     ReportResponse,
     ReportStatus
 )
+import uuid
 # from app.auth import get_current_user  # 더 이상 필요 없음
 from app.database import supabase
 
@@ -15,8 +16,7 @@ router = APIRouter(prefix="/reports", tags=["신고 관리"])
 
 @router.post("/emergency", response_model=ReportResponse, summary="긴급 신고")
 async def create_emergency_report(
-    report_data: EmergencyReportCreate,
-    device_id: str
+    report_data: EmergencyReportCreate
 ):
     """
     긴급 신고를 접수합니다.
@@ -36,9 +36,20 @@ async def create_emergency_report(
         )
 
     try:
+        # 기기 ID로 사용자 확인
+        user_response = supabase.table("users").select("id").eq("device_id", report_data.device_id).execute()
+        if not user_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="등록되지 않은 기기입니다. 먼저 온보딩을 완료해주세요."
+            )
+
+        user_id = user_response.data[0]["id"]
+
         # 신고 데이터 준비
         report_insert_data = {
-            "user_id": current_user["id"],
+            "device_id": report_data.device_id,
+            "user_id": user_id,
             "type": report_data.type,
             "status": ReportStatus.PENDING,
             "location_latitude": report_data.location_latitude,
@@ -153,6 +164,11 @@ async def create_auto_detection_report(
                 reported_at=report["reported_at"],
                 updated_at=report["updated_at"]
             )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="자동 감지 신고 접수에 실패했습니다"
+            )
 
     except Exception as e:
         print(f"Error creating auto detection report: {e}")
@@ -178,8 +194,18 @@ async def get_report_status(
         )
 
     try:
+        # 기기 ID로 사용자 확인
+        user_response = supabase.table("users").select("id").eq("device_id", device_id).execute()
+        if not user_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="등록되지 않은 기기입니다."
+            )
+
+        user_id = user_response.data[0]["id"]
+
         # 신고 조회 (사용자 본인의 신고만)
-        response = supabase.table("reports").select("*").eq("id", report_id).eq("user_id", current_user["id"]).execute()
+        response = supabase.table("reports").select("*").eq("id", report_id).eq("user_id", user_id).execute()
 
         if not response.data:
             raise HTTPException(
@@ -231,8 +257,18 @@ async def cancel_report(
         )
 
     try:
+        # 기기 ID로 사용자 확인
+        user_response = supabase.table("users").select("id").eq("device_id", device_id).execute()
+        if not user_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="등록되지 않은 기기입니다."
+            )
+
+        user_id = user_response.data[0]["id"]
+
         # 먼저 신고 존재 여부 및 상태 확인
-        response = supabase.table("reports").select("*").eq("id", report_id).eq("user_id", current_user["id"]).execute()
+        response = supabase.table("reports").select("*").eq("id", report_id).eq("user_id", user_id).execute()
 
         if not response.data:
             raise HTTPException(
@@ -253,13 +289,13 @@ async def cancel_report(
         update_response = supabase.table("reports").update({
             "status": ReportStatus.CANCELLED,
             "updated_at": datetime.utcnow().isoformat()
-        }).eq("id", report_id).eq("user_id", current_user["id"]).execute()
+        }).eq("id", report_id).eq("user_id", user_id).execute()
 
         if update_response.data:
             updated_report = update_response.data[0]
             return ReportResponse(
                 id=str(updated_report["id"]),
-                user_id=str(updated_report["user_id"]),
+                device_id=str(updated_report["device_id"]),
                 type=updated_report["type"],
                 status=updated_report["status"],
                 location_latitude=updated_report["location_latitude"],
@@ -302,10 +338,20 @@ async def get_report_history(
         )
 
     try:
+        # 기기 ID로 사용자 확인
+        user_response = supabase.table("users").select("id").eq("device_id", device_id).execute()
+        if not user_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="등록되지 않은 기기입니다."
+            )
+
+        user_id = user_response.data[0]["id"]
+
         # 사용자의 모든 신고 조회 (최신순)
         response = supabase.table("reports")\
             .select("*")\
-            .eq("user_id", current_user["id"])\
+            .eq("user_id", user_id)\
             .order("reported_at", desc=True)\
             .range(offset, offset + limit - 1)\
             .execute()
